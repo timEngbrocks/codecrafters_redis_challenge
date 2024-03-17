@@ -2,6 +2,7 @@ use crate::resp::RESP_TERMINATOR;
 
 use super::{RespObject, RespValues};
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RespSimpleString {
 	value: String
 }

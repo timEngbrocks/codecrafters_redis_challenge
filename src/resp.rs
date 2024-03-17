@@ -8,6 +8,7 @@ pub(crate) mod simple_string;
 
 const RESP_TERMINATOR: &str = "\r\n";
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RespValues {
 	Array(RespArray),
 	BulkString(RespBulkString),
@@ -37,14 +38,12 @@ impl RespObject for RespValues {
 	fn deserialize(data: &str) -> (usize, RespValues) {
 		assert!(!data.is_empty());
 
-		let (consumed, value) = match data.chars().next() {
+		match data.chars().next() {
 			Some('*') => RespArray::deserialize(data),
 			Some('$') => RespBulkString::deserialize(data),
 			Some('+') => RespSimpleString::deserialize(data),
 			c => panic!("Unknown data type {:?} in '{data}'", c),
-		};
-		assert_eq!(consumed, data.len());
-		(consumed, value)
+		}
 	}
 }
 
