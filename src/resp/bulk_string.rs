@@ -4,13 +4,13 @@ use super::{RespObject, RespValues};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RespBulkString {
-	values: Vec<u8>
+	values: Vec<u8>,
 }
 
 impl RespBulkString {
 	pub fn from_raw(values: Vec<u8>) -> RespBulkString {
 		RespBulkString {
-			values
+			values,
 		}
 	}
 
@@ -37,7 +37,7 @@ impl RespBulkString {
 
 impl RespObject for RespBulkString {
 	fn serialize(&self) -> String {
-		format!("${}{}{}{}", self.values.len(), RESP_TERMINATOR, self.as_str(), RESP_TERMINATOR)
+		format!("${}{}{}{}", self.len(), RESP_TERMINATOR, self.as_str(), RESP_TERMINATOR)
 	}
 
 	fn deserialize(data: &str) -> (usize, RespValues) {
@@ -62,6 +62,7 @@ impl RespObject for RespBulkString {
 				None => panic!("Misformed RespBulkString: '{}'", data),
 			}
 		}
+
 		let mut values: Vec<u8> = Vec::new();
 		for i in 0..length {
 			match data.as_bytes().get(offset + i).copied() {
@@ -73,7 +74,7 @@ impl RespObject for RespBulkString {
 		assert_eq!(data.chars().nth(offset + length + 1), Some('\n'));
 		
 		(offset + length + 2, RespValues::BulkString(RespBulkString {
-			values
+			values,
 		}))
 	}
 }

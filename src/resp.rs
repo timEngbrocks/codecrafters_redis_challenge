@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
-use self::{array::RespArray, bulk_string::RespBulkString, simple_string::RespSimpleString};
+use self::{array::RespArray, bulk_string::RespBulkString, null::RespNull, simple_string::RespSimpleString};
 
 pub(crate) mod array;
 pub(crate) mod bulk_string;
 pub(crate) mod simple_string;
+pub(crate) mod null;
 
 const RESP_TERMINATOR: &str = "\r\n";
 
@@ -13,6 +14,7 @@ pub enum RespValues {
 	Array(RespArray),
 	BulkString(RespBulkString),
 	SimpleString(RespSimpleString),
+	Null(RespNull),
 }
 
 pub trait RespObject {
@@ -32,6 +34,7 @@ impl RespObject for RespValues {
 			RespValues::Array(v) => v.serialize(),
 			RespValues::BulkString(v) => v.serialize(),
 			RespValues::SimpleString(v) => v.serialize(),
+			RespValues::Null(v) => v.serialize(),
 		}
 	}
 
@@ -42,6 +45,7 @@ impl RespObject for RespValues {
 			Some('*') => RespArray::deserialize(data),
 			Some('$') => RespBulkString::deserialize(data),
 			Some('+') => RespSimpleString::deserialize(data),
+			Some('_') => RespNull::deserialize(data),
 			c => panic!("Unknown data type {:?} in '{data}'", c),
 		}
 	}

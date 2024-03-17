@@ -9,6 +9,7 @@ use crate::commands::{Command, Commands};
 
 pub(crate) mod commands;
 pub(crate) mod resp;
+pub(crate) mod store;
 
 const INPUT_BUFFER_SIZE: usize = 2048;
 
