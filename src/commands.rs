@@ -1,4 +1,4 @@
-use std::{io::Write, net::TcpStream};
+use tokio::{io::AsyncWriteExt, net::TcpStream};
 
 use crate::resp::{RespObject, RespValues};
 
@@ -10,26 +10,26 @@ pub enum Commands {
 	Ping(CommandPing),
 }
 
-pub fn respond(mut stream: TcpStream, response: RespValues) {
-	match stream.write_all(response.serialize().as_bytes()) {
+pub async fn respond(stream: &mut TcpStream, response: RespValues) {
+	match stream.write_all(response.serialize().as_bytes()).await {
 		Ok(_) => (),
 		Err(e) => eprintln!("{}", e)
 	};
 }
 
 pub trait Command {
-	fn invoke(stream: TcpStream, data: RespValues);
+	async fn invoke(stream: &mut TcpStream, data: RespValues);
 }
 
 impl Command for Commands {
-	fn invoke(stream: TcpStream, data: RespValues) {
+	async fn invoke(stream: &mut TcpStream, data: RespValues) {
 		match &data {
 			RespValues::Array(a) => {
 				assert_eq!(a.len(), 1);
 				match a.get(0).unwrap() {
 					RespValues::BulkString(b) => {
 						match b.as_str() {
-							"ping" => CommandPing::invoke(stream, data),
+							"ping" => CommandPing::invoke(stream, data).await,
 							command => panic!("Unknown command: '{command}'"),
 						}
 					},
