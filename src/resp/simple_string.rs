@@ -33,7 +33,7 @@ impl RespObject for RespSimpleString {
 		assert_eq!(data.chars().next(), Some('+'));
 
 		let mut value = Vec::new();
-		for i in 1..data.len() - 2 {
+		for i in 1..data.len() - 1 {
 			if data.chars().nth(i) == Some('\r') && data.chars().nth(i + 1) == Some('\n') {
 				return (i + 1, RespValues::SimpleString(RespSimpleString { value: String::from_iter(value) }))
 			}

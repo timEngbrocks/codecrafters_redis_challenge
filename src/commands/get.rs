@@ -1,8 +1,8 @@
 use tokio::net::TcpStream;
 
-use crate::{commands::null_reply, resp::{bulk_string::RespBulkString, RespValues}, store::global_store};
+use crate::{resp::{bulk_string::RespBulkString, RespValues}, store::global_store, util::{null_reply, respond}};
 
-use super::{respond, Command};
+use super::Command;
 
 pub struct CommandGet {}
 

@@ -1,8 +1,8 @@
 use tokio::net::TcpStream;
 
-use crate::resp::RespValues;
+use crate::{resp::RespValues, util::respond};
 
-use super::{respond, Command};
+use super::Command;
 
 pub struct CommandEcho {}
 

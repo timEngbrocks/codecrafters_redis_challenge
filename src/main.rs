@@ -12,8 +12,9 @@ pub(crate) mod commands;
 pub(crate) mod resp;
 pub(crate) mod store;
 pub(crate) mod replication;
+pub(crate) mod util;
 
-const INPUT_BUFFER_SIZE: usize = 2048;
+pub const INPUT_BUFFER_SIZE: usize = 2048;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -35,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     
     let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
 
-    server_initialization(args);
+    server_initialization(args).await;
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -45,10 +46,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn server_initialization(args: Args) {
+async fn server_initialization(args: Args) {
     println!("Initializing server.");
 
-    initialize_replication(args);
+    initialize_replication(args).await;
 }
 
 async fn handle_connection(mut stream: TcpStream) {

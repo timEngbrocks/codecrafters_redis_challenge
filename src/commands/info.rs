@@ -1,8 +1,8 @@
 use tokio::net::TcpStream;
 
-use crate::{replication::replication_state, resp::{bulk_string::RespBulkString, RespValues, RESP_TERMINATOR}};
+use crate::{replication::replication_state, resp::{bulk_string::RespBulkString, RespValues, RESP_TERMINATOR}, util::respond};
 
-use super::{respond, Command};
+use super::Command;
 
 pub struct CommandInfo {}
 

@@ -1,6 +1,7 @@
+use core::panic;
 use std::fmt::Display;
-use rand::Rng;
-use crate::Args;
+use tokio::net::TcpStream;
+use crate::{resp::{array::RespArray, bulk_string::RespBulkString, RespValues}, util::{await_response, generate_master_replid, ping_response, request}, Args};
 
 #[derive(PartialEq)]
 pub enum ReplicationRole {
@@ -61,7 +62,7 @@ pub fn replication_state() -> &'static ReplicationInfo {
 	}
 }
 
-pub fn initialize_replication(args: Args) {
+pub async fn initialize_replication(args: Args) {
 	println!("Initializing replication.");
 
 	let (role, master_host, master_port) = match args.replica_of {
@@ -75,6 +76,13 @@ pub fn initialize_replication(args: Args) {
 			(ReplicationRole::Slave, master_host, master_port)
 		},
 		None => (ReplicationRole::Master, String::from(""), 0)
+	};
+
+	match role {
+		ReplicationRole::Slave => {
+			execute_replication_handshake(&master_host, &master_port).await;
+		},
+		ReplicationRole::Master => ()
 	};
 
 	unsafe {
@@ -94,17 +102,25 @@ pub fn initialize_replication(args: Args) {
 	}
 }
 
-fn generate_master_replid() -> String {
-	let mut rng = rand::thread_rng();
-	let mut master_replid: Vec<u8> = Vec::new();
-	for _ in 0..40 {
-		let n: u8 = rng.gen_range(0..=35);
-		let c = match n {
-			0..=9 => n + 48,
-			10..=35 => n + (97 - 10),
-			_ => unreachable!(),
-		};
-		master_replid.push(c);
-	}
-	String::from_utf8(master_replid).unwrap()
+async fn execute_replication_handshake(master_host: &str, master_port: &u16) {
+	let mut stream = match TcpStream::connect(format!("{}:{}", master_host, master_port)).await {
+		Ok(s) => s,
+		Err(e) => panic!("Could not connect to replication master at '{}:{}', got: {}", master_host, master_port, e),
+	};
+
+	let ping_request = RespValues::Array(RespArray::from_raw(vec![
+		RespValues::BulkString(RespBulkString::from_raw(String::from("ping").into_bytes())),
+	]));
+
+	request(&mut stream, ping_request).await;
+	let response = await_response(&mut stream).await;
+	match response {
+		Some(r) => {
+			if r != ping_response() {
+				panic!("Replication handshake: Received incorrect response from master for ping request");
+			}
+		},
+		None => panic!("Replication handshake: Master did not reply to ping request"),
+	};
 }
+

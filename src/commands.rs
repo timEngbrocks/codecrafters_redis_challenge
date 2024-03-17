@@ -18,23 +18,6 @@ pub enum Commands {
 	Info(CommandInfo),
 }
 
-pub async fn respond(stream: &mut TcpStream, response: RespValues) {
-	match stream.write_all(response.serialize().as_bytes()).await {
-		Ok(_) => (),
-		Err(e) => eprintln!("{}", e)
-	};
-}
-
-pub async fn null_reply(stream: &mut TcpStream) {
-	let response = RespValues::Null(RespNull {});
-	respond(stream, response).await;
-}
-
-pub async fn ok_reply(stream: &mut TcpStream) {
-	let response = RespValues::SimpleString(RespSimpleString::from_str("OK"));
-	respond(stream, response).await;
-}
-
 pub trait Command {
 	async fn invoke(stream: &mut TcpStream, data: RespValues);
 }
