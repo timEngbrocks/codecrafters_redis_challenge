@@ -1,7 +1,32 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::{Duration, Instant}};
+
+struct StoreValue {
+	value: String,
+	expiry_time: Option<u64>,
+	created_at: Instant,
+}
+
+impl StoreValue {
+	pub fn new(value: String, expiry_time: Option<u64>) -> StoreValue {
+		StoreValue {
+			value,
+			expiry_time,
+			created_at: Instant::now(),
+		}
+	}
+
+	pub fn value(&self) -> Option<&String> {
+		if let Some(expiry_time) = self.expiry_time {
+			if (Instant::now() - self.created_at) > Duration::from_millis(expiry_time) {
+				return None
+			}
+		}
+		Some(&self.value)
+	}
+}
 
 pub struct Store {
-	data: HashMap<String, String>
+	data: HashMap<String, StoreValue>
 }
 
 static mut GLOBAL_STORE: Option<Store> = None;
@@ -23,11 +48,17 @@ impl Store {
 	}
 
 	pub fn get(&self, key: String) -> Option<&String> {
-		self.data.get(&key)
+		match self.data.get(&key) {
+			Some(v) => v.value(),
+			None => None,
+		}
 	}
 
-	pub fn set(&mut self, key: String, value: String) -> Option<String> {
-		self.data.insert(key, value)
+	pub fn set(&mut self, key: String, value: String, expiry_time: Option<u64>) -> Option<String> {
+		match self.data.insert(key, StoreValue::new(value, expiry_time)) {
+			Some(v) => v.value().cloned(),
+			None => None,
+		}
 	}
 
 	pub fn has(&self, key: String) -> bool {
