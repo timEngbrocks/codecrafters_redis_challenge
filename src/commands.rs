@@ -2,18 +2,20 @@ use tokio::{io::AsyncWriteExt, net::TcpStream};
 
 use crate::resp::{null::RespNull, simple_string::RespSimpleString, RespObject, RespValues};
 
-use self::{echo::CommandEcho, get::CommandGet, ping::CommandPing, set::CommandSet};
+use self::{echo::CommandEcho, get::CommandGet, info::CommandInfo, ping::CommandPing, set::CommandSet};
 
 pub(crate) mod ping;
 pub(crate) mod echo;
 pub(crate) mod set;
 pub(crate) mod get;
+pub(crate) mod info;
 
 pub enum Commands {
 	Ping(CommandPing),
 	Echo(CommandEcho),
 	Set(CommandSet),
 	Get(CommandGet),
+	Info(CommandInfo),
 }
 
 pub async fn respond(stream: &mut TcpStream, response: RespValues) {
@@ -49,6 +51,7 @@ impl Command for Commands {
 							"echo" => CommandEcho::invoke(stream, data).await,
 							"set" => CommandSet::invoke(stream, data).await,
 							"get" => CommandGet::invoke(stream, data).await,
+							"info" => CommandInfo::invoke(stream, data).await,
 							command => panic!("Unknown command: '{command}'"),
 						}
 					},

@@ -6,11 +6,12 @@ use resp::{RespObject, RespValues};
 use tokio::{io::AsyncReadExt, net::{TcpListener, TcpStream}};
 use clap::Parser;
 
-use crate::commands::{Command, Commands};
+use crate::{commands::{Command, Commands}, replication::initialize_replication};
 
 pub(crate) mod commands;
 pub(crate) mod resp;
 pub(crate) mod store;
+pub(crate) mod replication;
 
 const INPUT_BUFFER_SIZE: usize = 2048;
 
@@ -26,17 +27,25 @@ struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
+    server_initialization();
+
     let port = args.port.unwrap_or(6379);
     println!("Listening on port: {}", port);
 
     let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
-    
+
     loop {
         let (stream, _) = listener.accept().await?;
         tokio::spawn(async move {
             handle_connection(stream).await;
         });
     }
+}
+
+fn server_initialization() {
+    println!("Initializing server.");
+
+    initialize_replication();
 }
 
 async fn handle_connection(mut stream: TcpStream) {

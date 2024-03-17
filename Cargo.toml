@@ -24,3 +24,4 @@ bytes = "1.3.0"                                     # helps manage buffers
 clap = { version = "4.5.3", features = ["derive"] }
 thiserror = "1.0.32"                                # error handling
 tokio = { version = "1.23.0", features = ["full"] } # async networking
+uuid = { version = "1.7.0", features = ["v4", "fast-rng"] }   # generate UUIDs

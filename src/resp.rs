@@ -7,7 +7,7 @@ pub(crate) mod bulk_string;
 pub(crate) mod simple_string;
 pub(crate) mod null;
 
-const RESP_TERMINATOR: &str = "\r\n";
+pub(crate) const RESP_TERMINATOR: &str = "\r\n";
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RespValues {
