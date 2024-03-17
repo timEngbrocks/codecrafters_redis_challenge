@@ -1,6 +1,9 @@
 use std::fmt::Display;
 use uuid::Uuid;
 
+use crate::Args;
+
+#[derive(PartialEq)]
 pub enum ReplicationRole {
 	Master,
 	Slave
@@ -25,6 +28,8 @@ pub struct ReplicationInfo {
 	pub repl_backlog_size: usize,
 	pub repl_backlog_first_byte_offset: usize,
 	pub repl_backlog_histlen: usize,
+	pub master_host: String,
+	pub master_port: u16,
 }
 
 impl Display for ReplicationInfo {
@@ -38,7 +43,12 @@ impl Display for ReplicationInfo {
 		writeln!(f, "repl_backlog_active:{}", self.repl_backlog_active)?;
 		writeln!(f, "repl_backlog_size:{}", self.repl_backlog_size)?;
 		writeln!(f, "repl_backlog_first_byte_offset:{}", self.repl_backlog_first_byte_offset)?;
-		writeln!(f, "repl_backlog_histlen:{}", self.repl_backlog_histlen)
+		writeln!(f, "repl_backlog_histlen:{}", self.repl_backlog_histlen)?;
+		if self.role == ReplicationRole::Slave {
+			writeln!(f, "master_host:{}", self.master_host)?;
+			writeln!(f, "master_port:{}", self.master_port)?;
+		}
+		Ok(())
 	}
 }
 
@@ -52,12 +62,25 @@ pub fn replication_state() -> &'static ReplicationInfo {
 	}
 }
 
-pub fn initialize_replication() {
+pub fn initialize_replication(args: Args) {
 	println!("Initializing replication.");
-	
+
+	let (role, master_host, master_port) = match args.replica_of {
+		Some(v) => {
+			assert!(v.len() == 2);
+			let master_host = v[0].clone();
+			let master_port = match v[1].parse::<u16>() {
+				Ok(v) => v,
+				Err(e) => panic!("--replicaof: Could not parse master port ('{}'), got: {}", v[1], e),
+			};
+			(ReplicationRole::Slave, master_host, master_port)
+		},
+		None => (ReplicationRole::Master, String::from(""), 0)
+	};
+
 	unsafe {
 		REPLICATION_STATE = Some(ReplicationInfo {
-			role: ReplicationRole::Master,
+			role,
 			connected_slaves: 0,
 			master_replid: Uuid::new_v4().to_string(),
 			master_repl_offset: 0,
@@ -66,6 +89,8 @@ pub fn initialize_replication() {
 			repl_backlog_size: 0,
 			repl_backlog_first_byte_offset: 0,
 			repl_backlog_histlen: 0,
+			master_host,
+			master_port,
 		});
 	}
 }

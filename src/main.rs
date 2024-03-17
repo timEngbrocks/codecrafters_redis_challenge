@@ -17,9 +17,12 @@ const INPUT_BUFFER_SIZE: usize = 2048;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-struct Args {
+pub struct Args {
     #[arg(long)]
     port: Option<u16>,
+
+    #[arg(long = "replicaof", value_delimiter = ' ', num_args = 2)]
+    replica_of: Option<Vec<String>>
 }
 
 
@@ -27,12 +30,12 @@ struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    server_initialization();
-
     let port = args.port.unwrap_or(6379);
     println!("Listening on port: {}", port);
-
+    
     let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
+
+    server_initialization(args);
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -42,10 +45,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn server_initialization() {
+fn server_initialization(args: Args) {
     println!("Initializing server.");
 
-    initialize_replication();
+    initialize_replication(args);
 }
 
 async fn handle_connection(mut stream: TcpStream) {
