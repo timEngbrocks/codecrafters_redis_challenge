@@ -1,6 +1,5 @@
 use std::fmt::Display;
-use uuid::Uuid;
-
+use rand::Rng;
 use crate::Args;
 
 #[derive(PartialEq)]
@@ -82,7 +81,7 @@ pub fn initialize_replication(args: Args) {
 		REPLICATION_STATE = Some(ReplicationInfo {
 			role,
 			connected_slaves: 0,
-			master_replid: Uuid::new_v4().to_string(),
+			master_replid: generate_master_replid(),
 			master_repl_offset: 0,
 			second_repl_offset: 0,
 			repl_backlog_active: 0,
@@ -93,4 +92,19 @@ pub fn initialize_replication(args: Args) {
 			master_port,
 		});
 	}
+}
+
+fn generate_master_replid() -> String {
+	let mut rng = rand::thread_rng();
+	let mut master_replid: Vec<u8> = Vec::new();
+	for _ in 0..40 {
+		let n: u8 = rng.gen_range(0..=35);
+		let c = match n {
+			0..=9 => n + 48,
+			10..=35 => n + (97 - 10),
+			_ => unreachable!(),
+		};
+		master_replid.push(c);
+	}
+	String::from_utf8(master_replid).unwrap()
 }
