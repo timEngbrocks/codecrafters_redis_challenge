@@ -4,6 +4,7 @@ use std::error::Error;
 
 use resp::{RespObject, RespValues};
 use tokio::{io::AsyncReadExt, net::{TcpListener, TcpStream}};
+use clap::Parser;
 
 use crate::commands::{Command, Commands};
 
@@ -13,9 +14,22 @@ pub(crate) mod store;
 
 const INPUT_BUFFER_SIZE: usize = 2048;
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(long)]
+    port: Option<u16>,
+}
+
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let listener = TcpListener::bind("127.0.0.1:6379").await?;
+    let args = Args::parse();
+
+    let port = args.port.unwrap_or(6379);
+    println!("Listening on port: {}", port);
+
+    let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
     
     loop {
         let (stream, _) = listener.accept().await?;
