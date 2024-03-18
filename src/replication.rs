@@ -1,7 +1,7 @@
 use core::panic;
 use std::fmt::Display;
 use tokio::net::TcpStream;
-use crate::{resp::{array::RespArray, bulk_string::RespBulkString, RespValues}, util::{await_response, generate_master_replid, ping_response, request}, Args};
+use crate::{resp::{array::RespArray, bulk_string::RespBulkString, RespValues}, util::{await_response, generate_master_replid, ok_response, ping_response, request}, Args, LISTENING_PORT};
 
 #[derive(PartialEq)]
 pub enum ReplicationRole {
@@ -59,6 +59,37 @@ pub fn replication_state() -> &'static ReplicationInfo {
 			Some(v) => v,
 			None => panic!("Tried accessing REPLICATION_STATE before server was initialized!"),
 		}
+	}
+}
+
+#[derive(Clone)]
+pub struct ReplicationSlave {
+	pub port: u16,
+	pub capabilities: Vec<String>,
+}
+
+impl Display for ReplicationSlave {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		writeln!(f, "Slave: port={}, capabilities={}", self.port, self.capabilities.join(", "))?;
+		Ok(())
+	}
+}
+
+struct ReplicationConfiguration {
+	pub slaves: Vec<ReplicationSlave>,
+}
+
+static mut REPLICATION_CONFIGURATION: ReplicationConfiguration = ReplicationConfiguration {
+	slaves: Vec::new(),
+};
+pub fn add_replication_slave(slave: ReplicationSlave) {
+	unsafe {
+		assert!(matches!(REPLICATION_STATE, Some(ReplicationInfo { role: ReplicationRole::Master, ..})));
+		REPLICATION_CONFIGURATION.slaves.push(slave);
+
+		println!("Added replication slave!");
+		println!("Current slaves are:");
+		REPLICATION_CONFIGURATION.slaves.iter().for_each(|s| println!("{s}"));
 	}
 }
 
@@ -122,5 +153,41 @@ async fn execute_replication_handshake(master_host: &str, master_port: &u16) {
 		},
 		None => panic!("Replication handshake: Master did not reply to ping request"),
 	};
+
+	let request_data = RespValues::Array(RespArray::from_raw(vec![
+		RespValues::BulkString(RespBulkString::from_raw(String::from("REPLCONF").into_bytes())),
+		RespValues::BulkString(RespBulkString::from_raw(String::from("listening-port").into_bytes())),
+		RespValues::BulkString(RespBulkString::from_raw(unsafe { LISTENING_PORT.to_string() }.into_bytes())),
+	]));
+	request(&mut stream, request_data).await;
+	let response = await_response(&mut stream).await;
+	match response {
+		Some(r) => {
+			if r != ok_response() {
+				panic!("Replication handshake: Received incorrect response from master for 1st REPLCONF request");
+			}
+		},
+		None => panic!("Replication handshake: Master did not reply to 1st REPLCONF request"),
+	};
+
+	let request_data = RespValues::Array(RespArray::from_raw(vec![
+		RespValues::BulkString(RespBulkString::from_raw(String::from("REPLCONF").into_bytes())),
+		RespValues::BulkString(RespBulkString::from_raw(String::from("capa").into_bytes())),
+		RespValues::BulkString(RespBulkString::from_raw(String::from("psync2").into_bytes())),
+	]));
+	request(&mut stream, request_data).await;
+	let response = await_response(&mut stream).await;
+	match response {
+		Some(r) => {
+			if r != ok_response() {
+				panic!("Replication handshake: Received incorrect response from master for 2nd REPLCONF request");
+			}
+		},
+		None => panic!("Replication handshake: Master did not reply to 2nd REPLCONF request"),
+	};
+
+	// TODO: 3rd step of handshake
+
+	println!("Successfully connected to replication master.")
 }
 

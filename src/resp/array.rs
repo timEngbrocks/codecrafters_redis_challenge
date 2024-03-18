@@ -34,7 +34,7 @@ impl RespArray {
 impl RespObject for RespArray {
 	fn serialize(&self) -> String {
 		let serialized_values: Vec<String> = self.values.iter().map(|v| { v.serialize() }).collect();
-		let serialized_values = serialized_values.join("\r\n");
+		let serialized_values = serialized_values.join("");
 		format!("*{}{}{}", self.values.len(), RESP_TERMINATOR, serialized_values)
 	}
 

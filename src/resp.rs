@@ -40,7 +40,6 @@ impl RespObject for RespValues {
 
 	fn deserialize(data: &str) -> (usize, RespValues) {
 		assert!(!data.is_empty());
-
 		match data.chars().next() {
 			Some('*') => RespArray::deserialize(data),
 			Some('$') => RespBulkString::deserialize(data),

@@ -15,6 +15,7 @@ pub(crate) mod replication;
 pub(crate) mod util;
 
 pub const INPUT_BUFFER_SIZE: usize = 2048;
+pub static mut LISTENING_PORT: u16 = 6379;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -31,10 +32,11 @@ pub struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let port = args.port.unwrap_or(6379);
-    println!("Listening on port: {}", port);
-    
-    let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
+    let listener = unsafe {
+        LISTENING_PORT = args.port.unwrap_or(LISTENING_PORT);
+        println!("Listening on port: {}", LISTENING_PORT);
+        TcpListener::bind(format!("127.0.0.1:{}", LISTENING_PORT)).await?
+    };
 
     server_initialization(args).await;
 

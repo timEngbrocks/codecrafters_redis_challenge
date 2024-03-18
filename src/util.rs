@@ -21,9 +21,12 @@ pub async fn null_reply(stream: &mut TcpStream) {
 	respond(stream, response).await;
 }
 
+pub fn ok_response() -> RespValues {
+	RespValues::SimpleString(RespSimpleString::from_str("OK"))
+}
+
 pub async fn ok_reply(stream: &mut TcpStream) {
-	let response = RespValues::SimpleString(RespSimpleString::from_str("OK"));
-	respond(stream, response).await;
+	respond(stream, ok_response()).await;
 }
 
 pub async fn await_response(stream: &mut TcpStream) -> Option<RespValues> {
