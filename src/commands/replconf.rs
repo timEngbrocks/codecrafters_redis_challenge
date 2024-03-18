@@ -28,7 +28,7 @@ impl Command for CommandReplconf {
 							RespValues::BulkString(b) => {
 								match b.as_str().parse::<u16>() {
 									Ok(v) => v,
-									Err(e) => panic!("REPLCONF: Could not parse slave port, got: {}", e),
+									Err(e) => panic!("REPLCONF: Could not parse slave port, got: '{}'", e),
 								}
 							},
 							d => panic!("REPLCONF: Expected BulkString as 3rd argument for listening-port, got: '{}'", d),
